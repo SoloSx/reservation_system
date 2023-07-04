@@ -19,6 +19,8 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 	Button buttonExplanation;					//教室概要ボタン
 	Button buttonReservation;					//新規予約画面
 	Button buttonReservationStatus;				//教室予約状況確認画面
+	Button buttonSelfCheckReservation;			//自己予約状況確認，確認ボタン
+	Button buttonSelfCheckReservation2;			//自己予約状況確認条件指定ボタン
 	
 	//コンボボックスのインスタンス生成
 	ChoiceFacility choiceFacility;				//教室選択用コンボボックス
@@ -37,6 +39,8 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		buttonExplanation = new Button("教室概要");
 		buttonReservationStatus = new Button("予約状況");	
 		buttonReservation = new Button("新規予約");
+		buttonSelfCheckReservation = new Button("確認");
+		buttonSelfCheckReservation2 = new Button("条件指定");
 		
 		//教室選択用コンボボックスの生成
 		List<String>facilityId = new ArrayList<String>();
@@ -85,6 +89,11 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		//下部パネルに新規予約ボタン追加
 		panelSouth = new Panel();
 		panelSouth.add(buttonReservation);
+		//下部パネルに自己予約確認ボタン追加
+		panelSouth.add(new Label("　　　  　　　自己予約　"));
+		panelSouth.add(buttonSelfCheckReservation);
+		panelSouth.add(buttonSelfCheckReservation2);
+		
 		//メイン画面（MainFrame）に下部パネルを追加
 		add(panelSouth, BorderLayout.SOUTH);
 		
@@ -93,6 +102,8 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		buttonExplanation.addActionListener(this);
 		buttonReservationStatus.addActionListener(this);
 		buttonReservation.addActionListener(this);
+		buttonSelfCheckReservation.addActionListener(this);
+		buttonSelfCheckReservation2.addActionListener(this);
 		addWindowListener(this);
 	}
 	
@@ -141,15 +152,19 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String result = new String();
-		if (e.getSource() == buttonLog) {							//ログインボタンが押されたとき
-			result = reservationControl.loginLogout(this);			//loginLogoutメソッドを呼び出す
-		}else if(e.getSource() == buttonExplanation) {				//教室概要ボタンが押されたとき
+		if (e.getSource() == buttonLog) {								//ログインボタンが押されたとき
+			result = reservationControl.loginLogout(this);				//loginLogoutメソッドを呼び出す
+		}else if(e.getSource() == buttonExplanation) {					//教室概要ボタンが押されたとき
 			result = reservationControl.getFacilityExplanation(choiceFacility.getSelectedItem());//getFacilityExplanationを呼び出す
-		}else if(e.getSource() == buttonReservation) {				//新規予約ボタンが押されたとき
-			result = reservationControl.makeReservation(this);		//makeReservationを呼び出す
-		}else if(e.getSource() == buttonReservationStatus) {		//予約状況ボタンが押されたとき
-			result = reservationControl.makeReservationStatus(this);//makeReservationStatusを呼び出す
-		}
+		}else if(e.getSource() == buttonReservation) {					//新規予約ボタンが押されたとき
+			result = reservationControl.makeReservation(this);			//makeReservationを呼び出す
+		}else if(e.getSource() == buttonReservationStatus) {			//予約状況ボタンが押されたとき
+			result = reservationControl.makeReservationStatus(this);	//makeReservationStatusを呼び出す
+		}else if(e.getSource() == buttonSelfCheckReservation) {			//自己予約の確認ボタンが押されたとき
+			result = reservationControl.getSelfCheckReservation();		//getFacilityExplanationを呼び出す
+		}else if(e.getSource() == buttonSelfCheckReservation2) {		//自己予約の条件指定ボタンが押されたとき
+			result = reservationControl.makeSelfCheckReservation(this);//makeReservationStatusを呼び出す
+		}	
 		textMessage.setText(result);								//テキストエリアにControllerからの戻り値を表示
 	}
 }
