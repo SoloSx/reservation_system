@@ -156,34 +156,108 @@ public class ReservationControl {
 			String ryear_str = rd.tfYear.getText();							//新規予約ダイアログで設定された「年」を取得
 			String rmonth_str = rd.tfMonth.getText();						//新規予約ダイアログで設定された「月」を取得
 			String rday_str = rd.tfDay.getText();							//新規予約ダイアログで設定された「日」を取得
-			//月と日が一桁だったら,　前に0を付与
-			if(rmonth_str.length() == 1) {
+			String rdate;
+			
+			int rmonth_int = 0;
+			int rday_int = 0;
+
+			if (!rmonth_str.isEmpty()) {
+			    rmonth_int = Integer.parseInt(rmonth_str);
+			}
+			if (!rday_str.isEmpty()) {
+			    rday_int = Integer.parseInt(rday_str);
+			}
+			
+			if(rmonth_str.length() == 1) {									//月が一桁だったら,　前に0を付与
 				rmonth_str = "0" + rmonth_str;
 			}
-			if(rday_str.length() == 1) {
+			if(rday_str.length() == 1) {									//日が一桁だったら,　前に0を付与
 				rday_str = "0" + rday_str;
 			}
-			String rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;	//予約年月日をString型で合成
+			
+			//入力された日付が正しいかのチェックのための前処理
+			if (rmonth_str.startsWith("0")) {								//ｒmonth_strが'0'から始まっているとき
+			    rmonth_int = Integer.parseInt(rmonth_str.substring(1));		//先頭の'0'を除いてint型に変換
+			} else if(!rmonth_str.isEmpty()){														//ｒmonth_strが'0'以外から始まっているとき
+			    rmonth_int = Integer.parseInt(rmonth_str);					//そのままint型に変換
+			}
+			if (rday_str.startsWith("0")) {									//rday_strが'0'から始まっているとき
+			    rday_int = Integer.parseInt(rday_str.substring(1));			//先頭の'0'を除いてint型に変換
+			} else if(!rday_str.isEmpty()){														//ｒday_strが'0'以外から始まっているとき
+			    rday_int = Integer.parseInt(rday_str);						//そのままint型に変換
+			}
+
+			rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;			//予約年月日をString型で合成
+			
+			//各月末日
+			int maxDay;
+		    if (rmonth_int == 2) {											//2月の場合はうるう年の判定を行う
+		        if ((Integer.parseInt(ryear_str)) % 4 == 0 && ((Integer.parseInt(ryear_str)) % 100 != 0 || (Integer.parseInt(ryear_str)) % 400 == 0)) {
+		            maxDay = 29; 											//うるう年の場合は29日を返す
+		        } else {
+		            maxDay = 28; 											//うるう年でない場合は28日を返す
+		        }
+		    } else if ((rmonth_int == 4) || (rmonth_int == 6) || (rmonth_int== 9) || (rmonth_int == 11)) {
+		        maxDay = 30; 												//4月・6月・9月・11月の場合は30日を返す
+		    } else {
+		        maxDay = 31; 												//それ以外の月は31日を返す
+		    }
 			
 			//入力された日付が正しいかのチェック
-			try {
-				DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-				df.setLenient(false);										//日付の厳密化チェックを有効化
-				String convData = df.format(df.parse(rdate));				//rdateを一度date型に変換し, String型に再変換
-				if ((! rdate.equals(convData))||(ryear_str.length()!=4)){	//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
-					res = "日付の書式を修正して下さい　（年：西暦4桁, 月：1～12,　日：1～31（毎月末日まで））";
-					return res;
-				}
-			}catch(ParseException p){										//rdateが日付として成立してない時の処理
-				res = "日付の値を修正して下さい";
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			df.setLenient(false);											//日付の厳密化チェックを有効化
+			String convData = "";
+			
+			// 年月日がいずれか未入力の場合
+			if (ryear_str.isEmpty() || rmonth_str.isEmpty() || rday_str.isEmpty()) {
+			    res = "日付の値を修正して下さい．";
+			    return res;
+			}
+			//年：4桁以外，月：1未満12より大きい，日：1未満各月末日より大きいとき
+			else if ((ryear_str.length() != 4) || ((rmonth_int < 1) || (rmonth_int > 12)) || ((rday_int < 1) || (rday_int > maxDay))){	//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
+				res = "日付の書式を修正して下さい．　（年：西暦4桁, 月：1～12,　日：1～31（各月末日まで））";
 				return res;
 			}
+			
+			// rdateが日付として成立していない時の処理
+			try {
+			    convData = df.format(df.parse(rdate));  					// rdateを一度Date型に変換し、String型に再変換
+			} catch (ParseException e) {									// rdateが日付として成立していない時の処理
+			    res = "日付の値を修正して下さい．";
+			    return res;
+			}
+			
 			
 			//新規予約画面から教室名,　開始時刻, 終了時刻を取得
 			String facility = rd.choiceFacility.getSelectedItem();			//選択された教室IDを取り出す
 			String st = rd.startHour.getSelectedItem() + ":" + rd.startMinute.getSelectedItem() + ":00";	//選択された開始時刻を取り出す
 			String et = rd.endHour.getSelectedItem() + ":" + rd.endMinute.getSelectedItem() + ":00";		//選択された終了時刻を取り出す
+			et = et.substring(0,et.length() - 2);					//etime＝HH：ｍｍ：
+			String etime = et.replace(":", "");
+			int etime_int = Integer.parseInt(etime);
 			
+			//予約可能時間の終了時間を超えていないかのチェック
+			try {
+				connectDB();													//MySQLに接続
+				String sql_f = "SELECT * FROM db_reservation.facility WHERE facility_id = '" + facility + "';";
+				ResultSet rf = sqlStmt.executeQuery(sql_f);						//選択された教室IDと日付が同じレコードを抽出
+				if(rf.next()) {													//1件目のレコードを取得
+					String closeData = rf.getString("close_time");				//該当レコードのclose_timeを取得
+					closeData = closeData.substring(0,closeData.length() - 2);	//closeData＝HH:ｍｍ:
+					String closetime = closeData.replace(":", "");				//closetimeの「：」を削除（教室データの予約可能終了時間)，closeData=HHｍｍｓｓ
+					int closetime_int = Integer.parseInt(closetime);
+					if(etime_int > closetime_int) {
+						closeData = closeData.substring(0,closeData.length() - 1);//closeData＝HH:ｍｍ
+						res = "この教室の予約可能時間は，" + closeData + "までです．終了時刻を修正して下さい．";
+					}
+				}
+				closeDB();													//MySQLの接続を切る
+				return res;
+			}catch(Exception e){										//予約情報をDBに書き込む際にエラーが発生したとき
+				e.printStackTrace();
+			}
+			
+			//予約可能かチェック
 			if(st.compareTo(et)>= 0) {										//開始時刻と終了時刻が等しい（0）か終了時刻がが早い（-1）
 				res = "開始時刻と終了時刻が同じか終了時刻の方が早くなっています";
 			}else {															//終了時刻の方が遅い（正常）
@@ -298,49 +372,131 @@ public class ReservationControl {
 		String ryear_str = rd.tfYear.getText();								//予約状況ダイアログで設定された「年」を取得
 		String rmonth_str = rd.tfMonth.getText();							//予約状況ダイアログで設定された「月」を取得
 		String rday_str = rd.tfDay.getText();								//予約状況ダイアログで設定された「日」を取得
-		//月と日が一桁だったら,　前に0を付与
-		if(rmonth_str.length() == 1) {
+		String rdate;
+		String rdate_data = "";												//rdateを入れる変数の宣言
+		List<String> reservationInfoList = new ArrayList<>();  				//予約データを格納するリストの宣言
+		
+		int rmonth_int = 0;
+		int rday_int = 0;
+
+		if (!rmonth_str.isEmpty()) {
+		    rmonth_int = Integer.parseInt(rmonth_str);
+		}
+		if (!rday_str.isEmpty()) {
+		    rday_int = Integer.parseInt(rday_str);
+		}
+		
+		if(rmonth_str.length() == 1) {									//月が一桁だったら,　前に0を付与
 			rmonth_str = "0" + rmonth_str;
 		}
-		if(rday_str.length() == 1) {
+		if(rday_str.length() == 1) {									//日が一桁だったら,　前に0を付与
 			rday_str = "0" + rday_str;
 		}
-		String rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;		//年月日をString型で合成
-				
+		
+		//入力された日付が正しいかのチェックのための前処理
+		if (rmonth_str.startsWith("0")) {								//ｒmonth_strが'0'から始まっているとき
+		    rmonth_int = Integer.parseInt(rmonth_str.substring(1));		//先頭の'0'を除いてint型に変換
+		} else if(!rmonth_str.isEmpty()){														//ｒmonth_strが'0'以外から始まっているとき
+		    rmonth_int = Integer.parseInt(rmonth_str);					//そのままint型に変換
+		}
+		if (rday_str.startsWith("0")) {									//rday_strが'0'から始まっているとき
+		    rday_int = Integer.parseInt(rday_str.substring(1));			//先頭の'0'を除いてint型に変換
+		} else if(!rday_str.isEmpty()){														//ｒday_strが'0'以外から始まっているとき
+		    rday_int = Integer.parseInt(rday_str);						//そのままint型に変換
+		}
+
+		rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;			//予約年月日をString型で合成
+		
+		//各月末日
+		int maxDay;
+	    if (rmonth_int == 2) {											//2月の場合はうるう年の判定を行う
+	        if ((Integer.parseInt(ryear_str)) % 4 == 0 && ((Integer.parseInt(ryear_str)) % 100 != 0 || (Integer.parseInt(ryear_str)) % 400 == 0)) {
+	            maxDay = 29; 											//うるう年の場合は29日を返す
+	        } else {
+	            maxDay = 28; 											//うるう年でない場合は28日を返す
+	        }
+	    } else if ((rmonth_int == 4) || (rmonth_int == 6) || (rmonth_int== 9) || (rmonth_int == 11)) {
+	        maxDay = 30; 												//4月・6月・9月・11月の場合は30日を返す
+	    } else {
+	        maxDay = 31; 												//それ以外の月は31日を返す
+	    }
+		
 		//入力された日付が正しいかのチェック
-		try {
-			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-			df.setLenient(false);											//日付の厳密化チェックを有効化
-			String convData = df.format(df.parse(rdate));					//rdateを一度date型に変換し, String型に再変換
-			if ((! rdate.equals(convData))||(ryear_str.length()!=4)){		//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
-				res = "日付の書式を修正して下さい　（年：西暦4桁, 月：1～12,　日：1～31（毎月末日まで））";
-				return res;
-			}
-		}catch(ParseException p){											//rdateが日付として成立してない時の処理
-			res = "日付の値を修正して下さい";
+		DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+		df.setLenient(false);											//日付の厳密化チェックを有効化
+		String convData = "";
+		
+		// 年月日がいずれか未入力の場合
+		if (ryear_str.isEmpty() || rmonth_str.isEmpty() || rday_str.isEmpty()) {
+		    res = "日付の値を修正して下さい．";
+		    return res;
+		}
+		//年：4桁以外，月：1未満12より大きい，日：1未満各月末日より大きいとき
+		else if ((ryear_str.length() != 4) || ((rmonth_int < 1) || (rmonth_int > 12)) || ((rday_int < 1) || (rday_int > maxDay))){	//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
+			res = "日付の書式を修正して下さい．　（年：西暦4桁, 月：1～12,　日：1～31（各月末日まで））";
 			return res;
 		}
+		
+		// rdateが日付として成立していない時の処理
+		try {
+		    convData = df.format(df.parse(rdate));  					// rdateを一度Date型に変換し、String型に再変換
+		} catch (ParseException e) {									// rdateが日付として成立していない時の処理
+		    res = "日付の値を修正して下さい．";
+		    return res;
+		}
+		
+		
 		//教室予約状況画面から教室名を取得
-		String facility = rd.choiceFacility.getSelectedItem();				//選択された教室IDを取り出す
+		String facility = rd.choiceFacility.getSelectedItem();			//選択された教室IDを取り出す
+		
+		//自己予約確認を行った日を取得
+		Calendar justNow = Calendar.getInstance();						//現在の日時を取得
+		SimpleDateFormat justNow_c = new SimpleDateFormat("yyyyMMdd");
+		String justNow_s = justNow_c.format(justNow.getTime());			//年月日のみの文字列に
+		int justNow_int = Integer.parseInt(justNow_s);					//int型に変更
+				
 		//教室予約状況のOKボタンを押下時の処理
 		try {
-			String startTime = "";											//open_timeを入れる変数の宣言
-			String endTime = "";											//close_timeを入れる変数の宣言
+			String startTime = "";										//open_timeを入れる変数の宣言
+			String endTime = "";										//close_timeを入れる変数の宣言
 			
-			connectDB();													//MySQLに接続
+			connectDB();												//MySQLに接続
 			String sql = "SELECT * FROM db_reservation.reservation WHERE facility_id = '" + facility + "' AND day = '" +  rdate + "';";
-			ResultSet rs = sqlStmt.executeQuery(sql);						//選択された教室IDと同じレコードを抽出
-			if(rs.next()) {													//1件目のレコードを取得
-				startTime = rs.getString("start_time");						//start_timeの取得
-				endTime = rs.getString("end_time");							//end_timeの取得	
-				res = ryear_str + "年" + rmonth_str + "月" + rday_str + "日　 　予約時間：" + startTime.substring(0, 5) + "～" + endTime.substring(0, 5) + "　 教室：" + facility;	//教室概要情報データの作成	
-			}else {															//予約データがなかった時
-				res = "指定された教室、日付には予約が入っておりません.　";				//メッセージを返す
+			ResultSet rs = sqlStmt.executeQuery(sql);					//選択された教室IDと同じレコードを抽出
+		
+			boolean hasReservation = false;  							//予約が存在するかどうかを判定するフラグ
+			int count = 0; 												//予約情報のカウンタ
+			while (rs.next()) {											//レコードがなくなるまで繰り返す
+				hasReservation = true;  								//予約が存在する場合、フラグを立てる
+				rdate_data = rs.getString("day");						//予約日を取得
+				String rdate_s = rdate_data.replace("-", "");			//yyyy-mm-ddをyyyymmddに変更
+				int rdate_int = Integer.parseInt(rdate_s);				//int型に変更
+				if(rdate_int > justNow_int) {
+				
+					facility = rs.getString("facility_id");				//facility_idの取得、教室番号(str)
+					startTime = rs.getString("start_time");				//start_timeの取得、予約の開始時間
+					endTime = rs.getString("end_time");					//end_timeの取得、予約の終了時間
+				
+					//自己予約確認，表示データ作成
+					String reservationInfo = "予約日：" + rdate_data.substring(0, 4) + "年" + rdate_data.substring(5, 7) + "月" + rdate_data.substring(8, 10) + "日"
+											+ "　　予約時間：" + startTime.substring(0, 5) + "～" + endTime.substring(0, 5) + "　　教室：" + facility;
+					count++; 											//カウンタをインクリメント
+					reservationInfoList.add(reservationInfo);  			//予約情報をリストに追加
+					res += reservationInfo + "\n";  					//予約情報を res にも追加
+
+					if (count > 20) {
+						break; 											// 20件の予約データを取得したらループを終了する
+					}
+				}
 			}
-		}catch(Exception e) {												//例外発生時
-			e.printStackTrace();											//StackTraceを表示
+			if (!hasReservation) {
+				// 予約が存在しない場合の処理
+				res = "指定された教室、日付には予約が入っておりません.　";			//メッセージを返す
+			}
+		}catch(Exception e) {											//例外発生時
+			e.printStackTrace();										//StackTraceを表示
 		}
-		closeDB();															//MySQLとの接続を切る
+		closeDB();														//MySQLとの接続を切る
 		return res;
 	}
 	
@@ -352,7 +508,6 @@ public class ReservationControl {
 			List<String> reservationInfoList = new ArrayList<>();  			//予約データを格納するリストの宣言
 	
 			String facility = "";											//facility_idを入れる変数の宣言
-			String reservationDay = "";										//dayを入れる変数の宣言
 			String startTime = "";											//start_timeを入れる変数の宣言
 			String endTime = "";											//end_timeを入れる変数の宣言
 			String rdate_data = "";											//rdateを入れる変数の宣言
@@ -428,54 +583,111 @@ public class ReservationControl {
 			String ermonth_str = rd.etfMonth.getText();						//入力された検索終了期間「月」を取得
 			String erday_str = rd.etfDay.getText();							//入力された検索終了期間「日」を取得
 			    
-
-			//月と日が一桁だったら,　前に0を付与
-			if(srmonth_str.length() == 1) {
-				srmonth_str = "0" + srmonth_str;
-			}
-			if(ermonth_str.length() == 1) {
-				ermonth_str = "0" + ermonth_str;
-			}
-			if(srday_str.length() == 1) {
-				srday_str = "0" + erday_str;
-			}
-			if(erday_str.length() == 1) {
-				erday_str = "0" + erday_str;
-			}
 				
 			//入力された年月日合成
 			String srdate = "";
 			if (!sryear_str.isEmpty() && !srmonth_str.isEmpty() && !srday_str.isEmpty()) {
-			    srdate = sryear_str + "-" + srmonth_str + "-" + srday_str;		//検索開始年月日をString型で合成
+			    srdate = sryear_str + "-" + srmonth_str + "-" + srday_str;		//検索開始年月日をString型で合成	
 			}
 			String erdate = "";
 			if (!eryear_str.isEmpty() && !ermonth_str.isEmpty() && !erday_str.isEmpty()) {
 			    erdate = eryear_str + "-" + ermonth_str + "-" + erday_str;		//検索終了年月日をString型で合成
 			}
-				
+			
+			int srmonth_int = 0;
+			int srday_int = 0;
+			int ermonth_int = 0;
+			int erday_int = 0;
+
+			if (!srmonth_str.isEmpty()) {
+			    srmonth_int = Integer.parseInt(srmonth_str);
+			}
+			if (!srday_str.isEmpty()) {
+			    srday_int = Integer.parseInt(srday_str);
+			}
+			if (!ermonth_str.isEmpty()) {
+			    ermonth_int = Integer.parseInt(ermonth_str);
+			}
+			if (!erday_str.isEmpty()) {
+			    erday_int = Integer.parseInt(erday_str);
+			}
+			
+			//月，日が一桁だったら,　前に0を付与
+			if(srmonth_str.length() == 1) {
+				srmonth_str = "0" + srmonth_str;
+			}
+			if(srday_str.length() == 1) {
+				srday_str = "0" + srday_str;
+			}
+			if(ermonth_str.length() == 1) {
+				ermonth_str = "0" + ermonth_str;
+			}
+			if(erday_str.length() == 1) {
+				erday_str = "0" + erday_str;
+			}
+			
+			//入力された日付が正しいかのチェックのための前処理
+			if (srmonth_str.startsWith("0")) {								//ｒmonth_strが'0'から始まっているとき
+			    srmonth_int = Integer.parseInt(srmonth_str.substring(1));		//先頭の'0'を除いてint型に変換
+			} else if(!srmonth_str.isEmpty()){														//ｒmonth_strが'0'以外から始まっているとき
+			    srmonth_int = Integer.parseInt(srmonth_str);					//そのままint型に変換
+			}
+			if (srday_str.startsWith("0")) {									//rday_strが'0'から始まっているとき
+			    srday_int = Integer.parseInt(srday_str.substring(1));			//先頭の'0'を除いてint型に変換
+			} else if(!srday_str.isEmpty()){														//ｒday_strが'0'以外から始まっているとき
+			    srday_int = Integer.parseInt(srday_str);						//そのままint型に変換
+			}
+			if (ermonth_str.startsWith("0")) {								//ｒmonth_strが'0'から始まっているとき
+			    ermonth_int = Integer.parseInt(ermonth_str.substring(1));		//先頭の'0'を除いてint型に変換
+			} else if(!ermonth_str.isEmpty()){														//ｒmonth_strが'0'以外から始まっているとき
+			    ermonth_int = Integer.parseInt(ermonth_str);					//そのままint型に変換
+			}
+			if (erday_str.startsWith("0")) {									//rday_strが'0'から始まっているとき
+			    erday_int = Integer.parseInt(erday_str.substring(1));			//先頭の'0'を除いてint型に変換
+			} else if(!erday_str.isEmpty()){														//ｒday_strが'0'以外から始まっているとき
+			    erday_int = Integer.parseInt(erday_str);						//そのままint型に変換
+			}
+
+			
+			//各月末日
+			int maxDay;
+		    if (srmonth_int == 2) {											//2月の場合はうるう年の判定を行う
+		        if ((Integer.parseInt(sryear_str)) % 4 == 0 && ((Integer.parseInt(sryear_str)) % 100 != 0 || (Integer.parseInt(sryear_str)) % 400 == 0)) {
+		            maxDay = 29; 											//うるう年の場合は29日を返す
+		        } else {
+		            maxDay = 28; 											//うるう年でない場合は28日を返す
+		        }
+		    } else if ((srmonth_int == 4) || (srmonth_int == 6) || (srmonth_int== 9) || (srmonth_int == 11)) {
+		        maxDay = 30; 												//4月・6月・9月・11月の場合は30日を返す
+		    } else {
+		        maxDay = 31; 												//それ以外の月は31日を返す
+		    }
+		    
+		  //入力された日付が正しいかのチェック
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			df.setLenient(false);										//日付の厳密化チェックを有効化
+			String convData_s;
+			String convData_e;
+
+			
 			//年、月、日が全て空の場合は以下の処理をスキップする
 			if (!(sryear_str.isEmpty() && srmonth_str.isEmpty() && srday_str.isEmpty() &&
 			        eryear_str.isEmpty() && ermonth_str.isEmpty() && erday_str.isEmpty())) {
-				//入力された日付が正しいかのチェック
-				try {
-					DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-					df.setLenient(false);										//日付の厳密化チェックを有効化
-					String convData_s = df.format(df.parse(srdate));				//srdateを一度date型に変換し, String型に再変換
-					String convData_e = df.format(df.parse(erdate));				//erdateを一度date型に変換し, String型に再変換
-					
-					//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
-					if (((! srdate.equals(convData_s))||(sryear_str.length()!=4))||((! erdate.equals(convData_e))||(eryear_str.length()!=4))){
-						res = "日付の書式を修正して下さい　（年：西暦4桁, 月：1～12,　日：1～31（毎月末日まで））";
-						return res;
-					}
-					if ((sryear_str.isEmpty() && srmonth_str.isEmpty() && srday_str.isEmpty())||(eryear_str.isEmpty() && ermonth_str.isEmpty() && erday_str.isEmpty())) {
-				        res = "";
-				        return res;
-				    }
-				}catch(ParseException p){										//rdateが日付として成立してない時の処理
-					res = "日付の値を修正して下さい";
+				//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
+				if (((sryear_str.length()!=4)||(eryear_str.length()!=4))
+						|| ((srmonth_int < 1) || (srmonth_int > 12)) || ((srday_int < 1) || (srday_int > maxDay))
+						|| ((ermonth_int < 1) || (ermonth_int > 12)) || ((erday_int < 1) || (erday_int > maxDay))){
+					res = "日付の書式を修正して下さい　（年：西暦4桁, 月：1～12,　日：1～31（毎月末日まで））";
 					return res;
 				}
+			}
+			// rdateが日付として成立していない時の処理
+			try {
+			    convData_s = df.format(df.parse(srdate));  					// rdateを一度Date型に変換し、String型に再変換
+			    convData_e = df.format(df.parse(erdate));  					// rdateを一度Date型に変換し、String型に再変換
+			} catch (ParseException e) {									// rdateが日付として成立していない時の処理
+			    res = "日付の値を修正して下さい．";
+			    return res;
 			}
 			
 			//入力された年月日合成したstrをintに変換するまでの処理
@@ -488,11 +700,10 @@ public class ReservationControl {
 				srdate_int = Integer.parseInt(srdate_s);						//int型に変更
 				erdate_s = erdate.replace("-", "");								//yyyymmddの文字列にする
 				erdate_int = Integer.parseInt(erdate_s);						//int型に変更
-			
 			}
 			
 			//自己予約確認条件指定検索画面から教室名と表示件数を取得
-			String facility = rd.choiceFacility_s.getSelectedItem();			//選択された教室IDを取り出す
+			String facility_s = rd.choiceFacility_s.getSelectedItem();			//選択された教室IDを取り出す
 			String nreservation = rd.n_reservation.getSelectedItem();			//選択された表示件数を取り出す
 			int nreservation_int = Integer.parseInt(nreservation);				//int型に変更
 			
@@ -501,6 +712,7 @@ public class ReservationControl {
 			String startTime = "";												//start_timeを入れる変数の宣言
 			String endTime = "";												//end_timeを入れる変数の宣言
 			String rdate_data = "";												//dayを入れる変数の宣言
+			String facility = "";
 			
 			//自己予約状況確認を行った日を取得
 			Calendar justNow = Calendar.getInstance();							//現在日時を取得
@@ -511,15 +723,15 @@ public class ReservationControl {
 			
 			connectDB();														//MySQLに接続
 			String sql;
+
 			try {
-				if(facility == ""){
+				if(facility_s == ""){
 					sql = "SELECT * FROM db_reservation.reservation WHERE user_id = '" + reservationUserID + "';";
 				}else{
-					sql = "SELECT * FROM db_reservation.reservation WHERE user_id = '" + reservationUserID + "' AND facility_id = '" +  facility + "';";	
+					sql = "SELECT * FROM db_reservation.reservation WHERE user_id = '" + reservationUserID + "' AND facility_id = '" +  facility_s + "';";	
 				}
 				
 				ResultSet rs = sqlStmt.executeQuery(sql);						//選択された教室IDと同じレコードを抽出
-				
 				boolean hasReservation = false;  								//予約が存在するかどうかを判定するフラグ
 				int count = 0; 													//予約情報のカウンタ
 				while (rs.next()) {												//レコードがなくなるまで繰り返す
@@ -560,6 +772,7 @@ public class ReservationControl {
 
 						startTime = rs.getString("start_time");					//start_timeの取得
 						endTime = rs.getString("end_time");						//end_timeの取得
+						facility = rs.getString("facility_id");					//facility_idの取得
 						
 						//自己予約状況確認情報データの作成
 						String reservationInfo = "予約日：" + rdate_h.substring(0, 4) + "年" + rdate_h.substring(4, 6) + "月" + rdate_h.substring(6, 8) + "日"
@@ -574,7 +787,7 @@ public class ReservationControl {
 					}
 				}
 				if (!hasReservation||(srdate_int<justNow_int && erdate_int<justNow_int)) {
-				    // 予約が存在しない場合の処理
+					// 予約が存在しない場合の処理
 					res = "予約がありません．";										//メッセージを返す
 				}
 			}catch(Exception e) {												//例外発生時
@@ -605,28 +818,77 @@ public class ReservationControl {
 			String ryear_str = rd.tfYear.getText();							//自己予約キャンセルダイアログで設定された「年」を取得
 			String rmonth_str = rd.tfMonth.getText();						//自己予約キャンセルダイアログで設定された「月」を取得
 			String rday_str = rd.tfDay.getText();							//自己予約キャンセルダイアログで設定された「日」を取得
-			//月と日が一桁だったら,　前に0を付与
-			if(rmonth_str.length() == 1) {
+			String rdate;
+			
+			int rmonth_int = 0;
+			int rday_int = 0;
+
+			if (!rmonth_str.isEmpty()) {
+			    rmonth_int = Integer.parseInt(rmonth_str);
+			}
+			if (!rday_str.isEmpty()) {
+			    rday_int = Integer.parseInt(rday_str);
+			}
+			
+			if(rmonth_str.length() == 1) {									//月が一桁だったら,　前に0を付与
 				rmonth_str = "0" + rmonth_str;
 			}
-			if(rday_str.length() == 1) {
+			if(rday_str.length() == 1) {									//日が一桁だったら,　前に0を付与
 				rday_str = "0" + rday_str;
 			}
-			String rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;	//予約年月日をString型で合成
+			
+			//入力された日付が正しいかのチェックのための前処理
+			if (rmonth_str.startsWith("0")) {								//ｒmonth_strが'0'から始まっているとき
+			    rmonth_int = Integer.parseInt(rmonth_str.substring(1));		//先頭の'0'を除いてint型に変換
+			} else if(!rmonth_str.isEmpty()){														//ｒmonth_strが'0'以外から始まっているとき
+			    rmonth_int = Integer.parseInt(rmonth_str);					//そのままint型に変換
+			}
+			if (rday_str.startsWith("0")) {									//rday_strが'0'から始まっているとき
+			    rday_int = Integer.parseInt(rday_str.substring(1));			//先頭の'0'を除いてint型に変換
+			} else if(!rday_str.isEmpty()){														//ｒday_strが'0'以外から始まっているとき
+			    rday_int = Integer.parseInt(rday_str);						//そのままint型に変換
+			}
+
+			rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;			//予約年月日をString型で合成
+			
+			//各月末日
+			int maxDay;
+		    if (rmonth_int == 2) {											//2月の場合はうるう年の判定を行う
+		        if ((Integer.parseInt(ryear_str)) % 4 == 0 && ((Integer.parseInt(ryear_str)) % 100 != 0 || (Integer.parseInt(ryear_str)) % 400 == 0)) {
+		            maxDay = 29; 											//うるう年の場合は29日を返す
+		        } else {
+		            maxDay = 28; 											//うるう年でない場合は28日を返す
+		        }
+		    } else if ((rmonth_int == 4) || (rmonth_int == 6) || (rmonth_int== 9) || (rmonth_int == 11)) {
+		        maxDay = 30; 												//4月・6月・9月・11月の場合は30日を返す
+		    } else {
+		        maxDay = 31; 												//それ以外の月は31日を返す
+		    }
 			
 			//入力された日付が正しいかのチェック
-			try {
-				DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-				df.setLenient(false);										//日付の厳密化チェックを有効化
-				String convData = df.format(df.parse(rdate));				//rdateを一度date型に変換し, String型に再変換
-				if ((! rdate.equals(convData))||(ryear_str.length()!=4)){	//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
-					res = "日付の書式を修正して下さい　（年：西暦4桁, 月：1～12,　日：1～31（毎月末日まで））";
-					return res;
-				}
-			}catch(ParseException p){										//rdateが日付として成立してない時の処理
-				res = "日付の値を修正して下さい";
+			DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+			df.setLenient(false);											//日付の厳密化チェックを有効化
+			String convData = "";
+			
+			// 年月日がいずれか未入力の場合
+			if (ryear_str.isEmpty() || rmonth_str.isEmpty() || rday_str.isEmpty()) {
+			    res = "日付の値を修正して下さい．";
+			    return res;
+			}
+			//年：4桁以外，月：1未満12より大きい，日：1未満各月末日より大きいとき
+			else if ((ryear_str.length() != 4) || ((rmonth_int < 1) || (rmonth_int > 12)) || ((rday_int < 1) || (rday_int > maxDay))){	//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
+				res = "日付の書式を修正して下さい．　（年：西暦4桁, 月：1～12,　日：1～31（各月末日まで））";
 				return res;
 			}
+			
+			// rdateが日付として成立していない時の処理
+			try {
+			    convData = df.format(df.parse(rdate));  					// rdateを一度Date型に変換し、String型に再変換
+			} catch (ParseException e) {									// rdateが日付として成立していない時の処理
+			    res = "日付の値を修正して下さい．";
+			    return res;
+			}
+
 			
 			//自己予約キャンセル画面から教室名,　開始時刻, 終了時刻を取得
 			String facility = rd.choiceFacility.getSelectedItem();			//選択された教室IDを取り出す
