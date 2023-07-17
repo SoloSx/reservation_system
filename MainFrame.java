@@ -1,4 +1,4 @@
-package client_system;
+package client_system1;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -20,7 +20,8 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 	Button buttonReservation;					//新規予約画面
 	Button buttonReservationStatus;				//教室予約状況確認画面
 	Button buttonSelfCheckReservation;			//自己予約状況確認，確認ボタン
-	Button buttonSelfCheckReservation2;			//自己予約状況確認条件指定ボタン
+	Button buttonSelfCheckReservation2;			//自己予約状況確認条件指定画面
+	Button buttonCancelReservation;				//自己予約キャンセル画面
 	
 	//コンボボックスのインスタンス生成
 	ChoiceFacility choiceFacility;				//教室選択用コンボボックス
@@ -41,6 +42,7 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		buttonReservation = new Button("新規予約");
 		buttonSelfCheckReservation = new Button("確認");
 		buttonSelfCheckReservation2 = new Button("条件指定");
+		buttonCancelReservation = new Button("キャンセル");
 		
 		//教室選択用コンボボックスの生成
 		List<String>facilityId = new ArrayList<String>();
@@ -86,13 +88,17 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		panelCenter.add(textMessage);
 		//MainFrameに中央パネルを追加
 		add(panelCenter, BorderLayout.CENTER);
+		
 		//下部パネルに新規予約ボタン追加
 		panelSouth = new Panel();
 		panelSouth.add(buttonReservation);
 		//下部パネルに自己予約確認ボタン追加
-		panelSouth.add(new Label("　　　  　　　自己予約　"));
+		panelSouth.add(new Label("　　　　　　　　　　　　　　自己予約　"));
 		panelSouth.add(buttonSelfCheckReservation);
 		panelSouth.add(buttonSelfCheckReservation2);
+		//下部パネルに自己予約キャンセルボタン追加
+		panelSouth.add(new Label(" "));
+		panelSouth.add(buttonCancelReservation);
 		
 		//メイン画面（MainFrame）に下部パネルを追加
 		add(panelSouth, BorderLayout.SOUTH);
@@ -104,6 +110,7 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		buttonReservation.addActionListener(this);
 		buttonSelfCheckReservation.addActionListener(this);
 		buttonSelfCheckReservation2.addActionListener(this);
+		buttonCancelReservation.addActionListener(this);
 		addWindowListener(this);
 	}
 	
@@ -163,8 +170,10 @@ public class MainFrame extends Frame implements ActionListener, WindowListener {
 		}else if(e.getSource() == buttonSelfCheckReservation) {			//自己予約の確認ボタンが押されたとき
 			result = reservationControl.getSelfCheckReservation();		//getFacilityExplanationを呼び出す
 		}else if(e.getSource() == buttonSelfCheckReservation2) {		//自己予約の条件指定ボタンが押されたとき
-			result = reservationControl.makeSelfCheckReservation(this);//makeReservationStatusを呼び出す
-		}	
+			result = reservationControl.makeSelfCheckReservation(this);	//makeReservationStatusを呼び出す
+		}else if(e.getSource() == buttonCancelReservation) {			//自己予約キャンセルボタンが押されたとき
+			result = reservationControl.makeCancelReservation(this);		//makeCancelReservationを呼び出す
+		}
 		textMessage.setText(result);								//テキストエリアにControllerからの戻り値を表示
 	}
 }

@@ -1,4 +1,4 @@
-package client_system;
+package client_system1;
 
 import java.sql.*;
 import java.awt.*;
@@ -582,6 +582,102 @@ public class ReservationControl {
 			}
 			closeDB();															//MySQLとの接続を切る
 		}else {																	//未ログイン状態の場合
+			res = "ログインして下さい";
+		}
+		return res;
+	}
+	
+	
+	//自己予約キャンセルボタン押下時のメソッド
+	public String makeCancelReservation(MainFrame frame) {
+		String res = "";													//予約キャンセル結果のメッセージを入れる
+		
+		if(flagLogin) {														//ログイン済みの時
+			//新規予約画面生成
+			CancelReservationDialog rd = new CancelReservationDialog(frame,this);
+			
+			//新規予約画面を表示
+			rd.setVisible(true);
+			if(rd.canceled) {												//自己予約キャンセルダイアログでキャンセルボタンが押されたとき
+				return res;													//処理終了.　（表示メッセージなし）
+			}
+			//新規予約画面から年月日を取得
+			String ryear_str = rd.tfYear.getText();							//自己予約キャンセルダイアログで設定された「年」を取得
+			String rmonth_str = rd.tfMonth.getText();						//自己予約キャンセルダイアログで設定された「月」を取得
+			String rday_str = rd.tfDay.getText();							//自己予約キャンセルダイアログで設定された「日」を取得
+			//月と日が一桁だったら,　前に0を付与
+			if(rmonth_str.length() == 1) {
+				rmonth_str = "0" + rmonth_str;
+			}
+			if(rday_str.length() == 1) {
+				rday_str = "0" + rday_str;
+			}
+			String rdate = ryear_str + "-" + rmonth_str + "-" + rday_str;	//予約年月日をString型で合成
+			
+			//入力された日付が正しいかのチェック
+			try {
+				DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+				df.setLenient(false);										//日付の厳密化チェックを有効化
+				String convData = df.format(df.parse(rdate));				//rdateを一度date型に変換し, String型に再変換
+				if ((! rdate.equals(convData))||(ryear_str.length()!=4)){	//String→date→Stringで同じ文字に戻らないか, 西暦が４桁でなければ書式エラー
+					res = "日付の書式を修正して下さい　（年：西暦4桁, 月：1～12,　日：1～31（毎月末日まで））";
+					return res;
+				}
+			}catch(ParseException p){										//rdateが日付として成立してない時の処理
+				res = "日付の値を修正して下さい";
+				return res;
+			}
+			
+			//自己予約キャンセル画面から教室名,　開始時刻, 終了時刻を取得
+			String facility = rd.choiceFacility.getSelectedItem();			//選択された教室IDを取り出す
+			String st = rd.startHour.getSelectedItem() + ":" + rd.startMinute.getSelectedItem() + ":00";	//選択された開始時刻を取り出す
+			String et = rd.endHour.getSelectedItem() + ":" + rd.endMinute.getSelectedItem() + ":00";		//選択された終了時刻を取り出す
+			
+			if(st.compareTo(et)>= 0) {										//開始時刻と終了時刻が等しい（0）か終了時刻がが早い（-1）
+				res = "開始時刻と終了時刻が同じか終了時刻の方が早くなっています";
+			}else {															//終了時刻の方が遅い（正常）
+				try {
+					//予約キャンセルをしようとした日時を取得
+					Calendar justNow = Calendar.getInstance();				//現在時刻を取得
+					SimpleDateFormat resDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+					String now = resDate.format(justNow.getTime());			//現在時刻をMySQLのdate型文字列に変換
+					
+					//キャンセルしたい予約が翌日以降か確認する前処理
+					String reservationDate = rdate.replace("-", "");			//予約日の文字列を"yyyymmdd"に変更
+					int rDate_int = Integer.parseInt(reservationDate);			//int型に変更
+					SimpleDateFormat justNow_c = new SimpleDateFormat("yyyyMMdd");
+			        String justNow_s = justNow_c.format(justNow.getTime());
+			        int justNow_int = Integer.parseInt(justNow_s);				//int型に変更
+
+					connectDB();													//MySQLに接続
+
+					//キャンセルする予約日チェック
+					if (rDate_int > justNow_int) {
+						String sql = "SELECT * FROM db_reservation.reservation WHERE	facility_id = '" + facility + "' AND day = '" +  rdate
+								+ "' AND start_time = '" + st + "' AND end_time = '" + et + "';";
+						
+						ResultSet rs = sqlStmt.executeQuery(sql);
+						if(rs.next()) {							
+							// 予約キャンセル情報をMySQLに書き込む
+							String sql2 = "DELETE FROM db_reservation.reservation WHERE	facility_id = '" + facility + "' AND day = '" +  rdate
+									+ "' AND start_time = '" + st + "' AND end_time = '" + et + "';";
+						
+							sqlStmt.executeUpdate(sql2);
+							
+							res = "予約がキャンセルされました";
+						}else {
+							res = "選択された教室・日付のその予約時間には予約がありません。";
+						}
+						rs.close();  											// ResultSetをクローズ
+					} else {
+						res = "過日または当日予約はキャンセルできません．";
+					}
+				}catch(Exception e){										//予約情報をDBに書き込む際にエラーが発生したとき
+					e.printStackTrace();
+				}
+				closeDB();													//MySQLの接続を切る
+			}	
+		}else {																//未ログイン状態の場合
 			res = "ログインして下さい";
 		}
 		return res;
