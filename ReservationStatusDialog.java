@@ -1,4 +1,4 @@
-package client_system1;
+package client_system;
 
 import java.awt.*;
 import java.awt.event.*;
