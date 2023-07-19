@@ -5,7 +5,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReservationDialog extends Dialog implements ActionListener, WindowListener, ItemListener{
+public class CancelReservationDialog extends Dialog implements ActionListener, WindowListener, ItemListener{
 	
 	boolean canceled;										//新規予約キャンセルステータス（キャンセル：true）
 	ReservationControl rc;									//ReservationControlインスタンス保存用
@@ -28,9 +28,9 @@ public class ReservationDialog extends Dialog implements ActionListener, WindowL
 	Button			buttonCancel;							//キャンセルボタン
 	
 	//コンストラクタ
-	public ReservationDialog(Frame owner, ReservationControl rc) {
+	public CancelReservationDialog(Frame owner, ReservationControl rc) {
 		//基底クラスのコンストラクタを呼び出す
-		super(owner, "新規予約", true);
+		super(owner, "予約キャンセル", true);
 		
 		this.rc = rc;										//ReservationControlのインスタンスを保存
 		
@@ -53,7 +53,7 @@ public class ReservationDialog extends Dialog implements ActionListener, WindowL
 		endMinute 	= new ChoiceMinute();
 		
 		//ボタンの生成
-		buttonOK	= new Button("予約実行");
+		buttonOK	= new Button("　　OK　　");
 		buttonCancel= new Button("キャンセル");
 		
 		//パネルの生成
